@@ -8,7 +8,12 @@ import co.andesexpress.orders.domain.port.out.CoverageClientPort;
 import co.andesexpress.orders.domain.port.out.CoverageClientPort.CoverageValidationResult;
 import co.andesexpress.orders.domain.port.out.OrderRepositoryPort;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreateOrderUseCase implements CreateOrderInputPort {
+
+    private static final Logger log = LoggerFactory.getLogger(CreateOrderUseCase.class);
 
     private final OrderRepositoryPort orderRepository;
     private final CoverageClientPort coverageClient;
@@ -23,6 +28,8 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
         // HU-04: idempotencia — si ya existe un pedido con esta clave, lo devolvemos tal cual
         var existing = orderRepository.findByIdempotencyKey(command.getIdempotencyKey());
         if (existing.isPresent()) {
+            log.info("Pedido con idempotencyKey={} ya existía, devolviendo pedido existente id={}",
+                command.getIdempotencyKey(), existing.get().getId());
             return existing.get();
         }
 
@@ -43,6 +50,7 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
         );
 
         if (!result.valid()) {
+             log.warn("Pedido {} rechazado: {}", order.getId(), result.rejectionMessage());
             // HU-02: destino inválido, rechazo con mensaje claro
             order.markRejected();
             orderRepository.save(order);
@@ -51,6 +59,7 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
 
         // Destino válido: pasa a VALIDATED con zona y tarifa
         order.markValidated(result.zone(), result.fare());
+        log.info("Pedido {} validado correctamente, zona={}", order.getId(), result.zone());
         return orderRepository.save(order);
     }
 }

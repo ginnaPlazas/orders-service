@@ -15,9 +15,13 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.math.BigDecimal;
 import java.time.Duration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Component
 public class CoverageClientAdapter implements CoverageClientPort {
 
+    private static final Logger log = LoggerFactory.getLogger(CoverageClientAdapter.class);
     private final WebClient webClient;
 
     public CoverageClientAdapter(WebClient.Builder webClientBuilder) {
@@ -64,6 +68,7 @@ public class CoverageClientAdapter implements CoverageClientPort {
             throw new CoverageServiceUnavailableException("Coverage no disponible (503)", e);
 
         } catch (Exception e) {
+             log.error("Fallo al llamar a Coverage para validar cobertura: {}", e.getMessage());
             // timeout, conexión rechazada, etc. — HU-07
             throw new CoverageServiceUnavailableException("No se pudo validar cobertura: " + e.getMessage(), e);
         }

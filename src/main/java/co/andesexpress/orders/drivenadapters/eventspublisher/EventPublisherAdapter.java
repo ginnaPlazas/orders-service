@@ -5,8 +5,13 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Component
 public class EventPublisherAdapter implements EventPublisherPort {
+
+    private static final Logger log = LoggerFactory.getLogger(EventPublisherAdapter.class);
 
     private final SqsClient sqsClient;
     private final String queueUrl;
@@ -29,5 +34,6 @@ public class EventPublisherAdapter implements EventPublisherPort {
                 .build();
 
         sqsClient.sendMessage(request);
+        log.info("Evento PedidoConfirmado publicado para orderId={}", orderId);
     }
 }
