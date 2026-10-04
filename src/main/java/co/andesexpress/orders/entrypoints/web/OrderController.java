@@ -1,7 +1,5 @@
 package co.andesexpress.orders.entrypoints.web;
 
-import co.andesexpress.orders.domain.exception.DestinationRejectedException;
-import co.andesexpress.orders.domain.exception.OrderNotFoundException;
 import co.andesexpress.orders.domain.model.Order;
 import co.andesexpress.orders.domain.port.in.ConfirmOrderInputPort;
 import co.andesexpress.orders.domain.port.in.CreateOrderInputPort;
@@ -55,16 +53,6 @@ public class OrderController {
     public ResponseEntity<OrderResponse> getOrderStatus(@PathVariable String orderId) {
         Order order = getOrderStatusInputPort.getOrderStatus(orderId);
         return ResponseEntity.ok(mapper.toResponse(order));
-    }
-
-    @ExceptionHandler(DestinationRejectedException.class)
-    public ResponseEntity<String> handleDestinationRejected(DestinationRejectedException e) {
-        return ResponseEntity.badRequest().body(e.getMessage());
-    }
-
-    @ExceptionHandler(OrderNotFoundException.class)
-    public ResponseEntity<String> handleOrderNotFound(OrderNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     }
 
     @PutMapping("/{orderId}/guide")
