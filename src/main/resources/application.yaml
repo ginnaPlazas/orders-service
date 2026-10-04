@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: orders-service
+
+resilience4j:
+  retry:
+    instances:
+      coverageService:
+        max-attempts: 3
+        wait-duration: 500ms
+        retry-exceptions:
+          - java.lang.Exception
+
+aws:
+  sqs:
+    order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/XXXXXXXXXXXX/pedido-confirmado-queue
