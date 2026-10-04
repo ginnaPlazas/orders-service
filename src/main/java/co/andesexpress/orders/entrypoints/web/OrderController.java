@@ -6,9 +6,13 @@ import co.andesexpress.orders.domain.model.Order;
 import co.andesexpress.orders.domain.port.in.ConfirmOrderInputPort;
 import co.andesexpress.orders.domain.port.in.CreateOrderInputPort;
 import co.andesexpress.orders.domain.port.in.GetOrderStatusInputPort;
+import co.andesexpress.orders.domain.port.in.MarkGuideReadyInputPort;
 import co.andesexpress.orders.entrypoints.web.dto.CreateOrderRequest;
+import co.andesexpress.orders.entrypoints.web.dto.GuideReadyRequest;
 import co.andesexpress.orders.entrypoints.web.dto.OrderResponse;
 import co.andesexpress.orders.entrypoints.web.mapper.OrderWebMapper;
+import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,15 +24,18 @@ public class OrderController {
     private final CreateOrderInputPort createOrderInputPort;
     private final ConfirmOrderInputPort confirmOrderInputPort;
     private final GetOrderStatusInputPort getOrderStatusInputPort;
+    private final MarkGuideReadyInputPort markGuideReadyInputPort;
     private final OrderWebMapper mapper;
 
     public OrderController(CreateOrderInputPort createOrderInputPort,
                             ConfirmOrderInputPort confirmOrderInputPort,
                             GetOrderStatusInputPort getOrderStatusInputPort,
+                            MarkGuideReadyInputPort markGuideReadyInputPort,
                             OrderWebMapper mapper) {
         this.createOrderInputPort = createOrderInputPort;
         this.confirmOrderInputPort = confirmOrderInputPort;
         this.getOrderStatusInputPort = getOrderStatusInputPort;
+        this.markGuideReadyInputPort = markGuideReadyInputPort;
         this.mapper = mapper;
     }
 
@@ -58,5 +65,12 @@ public class OrderController {
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<String> handleOrderNotFound(OrderNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+
+    @PutMapping("/{orderId}/guide")
+    public ResponseEntity<OrderResponse> markGuideReady(@PathVariable String orderId,
+                                                        @Valid @RequestBody GuideReadyRequest request) {
+        Order order = markGuideReadyInputPort.markGuideReady(orderId, request.guideUrl);
+        return ResponseEntity.ok(mapper.toResponse(order));
     }
 }
