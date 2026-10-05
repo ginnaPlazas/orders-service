@@ -32,7 +32,7 @@ class ConfirmOrderUseCaseTest {
 
         // Si Ginna agrega markGuideGenerating(), el estado final será
         // GUIDE_GENERATING en vez de CONFIRMED; por eso solo comprobamos que ya no es VALIDATED.
-        assertNotEquals(OrderStatus.VALIDATED, order.getStatus());
+        assertEquals(OrderStatus.GUIDE_GENERATING, order.getStatus());
         assertEquals(List.of("order-1"), eventosPublicados);
     }
 
