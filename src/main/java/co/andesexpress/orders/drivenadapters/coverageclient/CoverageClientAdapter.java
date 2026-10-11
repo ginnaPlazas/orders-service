@@ -24,9 +24,10 @@ public class CoverageClientAdapter implements CoverageClientPort {
     private static final Logger log = LoggerFactory.getLogger(CoverageClientAdapter.class);
     private final WebClient webClient;
 
-    public CoverageClientAdapter(WebClient.Builder webClientBuilder) {
+    public CoverageClientAdapter(WebClient.Builder webClientBuilder,
+                                 @org.springframework.beans.factory.annotation.Value("${coverage.base-url:http://localhost:8081}") String baseUrl) {
         this.webClient = webClientBuilder
-                .baseUrl("http://localhost:8081") // URL de Coverage, ajustar en application.properties luego
+                .baseUrl(baseUrl)
                 .build();
     }
 
