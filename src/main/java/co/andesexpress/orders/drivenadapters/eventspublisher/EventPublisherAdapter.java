@@ -23,10 +23,10 @@ public class EventPublisherAdapter implements EventPublisherPort {
     }
 
     @Override
-    public void publishOrderConfirmed(String orderId) {
+    public void publishOrderConfirmed(String orderId, String customerEmail) {
         String messageBody = """
-                {"eventType": "PedidoConfirmado", "orderId": "%s"}
-                """.formatted(orderId);
+                {"eventType": "PedidoConfirmado", "orderId": "%s", "customerEmail": "%s"}
+                """.formatted(orderId, escape(customerEmail));
 
         SendMessageRequest request = SendMessageRequest.builder()
                 .queueUrl(queueUrl)
@@ -35,5 +35,9 @@ public class EventPublisherAdapter implements EventPublisherPort {
 
         sqsClient.sendMessage(request);
         log.info("Evento PedidoConfirmado publicado para orderId={}", orderId);
+    }
+
+    private String escape(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

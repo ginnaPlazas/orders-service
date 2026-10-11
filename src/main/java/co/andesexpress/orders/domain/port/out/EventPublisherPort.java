@@ -1,5 +1,5 @@
 package co.andesexpress.orders.domain.port.out;
 
 public interface EventPublisherPort {
-    void publishOrderConfirmed(String orderId);
+    void publishOrderConfirmed(String orderId, String customerEmail);
 }

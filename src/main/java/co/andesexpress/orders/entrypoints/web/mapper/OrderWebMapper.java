@@ -18,7 +18,7 @@ public class OrderWebMapper {
                 .map(p -> new Product(p.name, p.weightKg))
                 .collect(Collectors.toList());
 
-        return new CreateOrderCommand(request.idempotencyKey, origin, destination, products);
+        return new CreateOrderCommand(request.idempotencyKey, request.customerEmail, origin, destination, products);
     }
 
     public OrderResponse toResponse(Order order) {

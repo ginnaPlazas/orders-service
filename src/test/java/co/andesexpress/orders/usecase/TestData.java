@@ -19,13 +19,17 @@ final class TestData {
 
     static Fare fare() { return new Fare(new BigDecimal("15000"), "COP"); }
 
+    static String customerEmail() {
+        return "cliente@andesexpress.com";
+    }
+
     static CreateOrderCommand command(String key) {
-        return new CreateOrderCommand(key, origin(), destination(), products());
+        return new CreateOrderCommand(key, customerEmail(), origin(), destination(), products());
     }
 
     /** Pedido en el estado que le pidas. */
     static Order orderIn(OrderStatus status) {
-        return Order.reconstruct("order-1", "key-1", origin(), destination(), products(),
+        return Order.reconstruct("order-1", "key-1", customerEmail(), origin(), destination(), products(),
                 status, null, null, null);
     }
 }

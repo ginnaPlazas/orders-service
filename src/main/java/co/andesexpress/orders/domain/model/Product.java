@@ -18,6 +18,11 @@ public final class Product {
         this.weightKg = weightKg;
     }
 
-    public String getName() { return name; }
-    public BigDecimal getWeightKg() { return weightKg; }
+    public String getName() { 
+        return name; 
+    }
+
+    public BigDecimal getWeightKg() { 
+        return weightKg; 
+    }
 }

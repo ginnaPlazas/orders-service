@@ -19,8 +19,13 @@ public final class Fare {
         this.currency = currency;
     }
 
-    public BigDecimal getAmount() { return amount; }
-    public String getCurrency() { return currency; }
+    public BigDecimal getAmount() { 
+        return amount; 
+    }
+
+    public String getCurrency() { 
+        return currency; 
+    }
 
     @Override
     public boolean equals(Object o) {

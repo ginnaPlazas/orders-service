@@ -21,7 +21,8 @@ class ConfirmOrderUseCaseTest {
     void setUp() {
         repository = new FakeOrderRepository();
         eventosPublicados = new ArrayList<>();
-        useCase = new ConfirmOrderUseCase(repository, eventosPublicados::add);
+        useCase = new ConfirmOrderUseCase(repository,
+                (orderId, customerEmail) -> eventosPublicados.add(orderId));
     }
 
     @Test

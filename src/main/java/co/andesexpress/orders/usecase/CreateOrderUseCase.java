@@ -36,6 +36,7 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
         // HU-01: crear el pedido en estado PENDING_VALIDATION
         Order order = new Order(
                 command.getIdempotencyKey(),
+                command.getCustomerEmail(),
                 command.getOrigin(),
                 command.getDestination(),
                 command.getProducts()

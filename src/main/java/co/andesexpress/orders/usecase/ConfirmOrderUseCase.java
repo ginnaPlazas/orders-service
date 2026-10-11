@@ -25,7 +25,7 @@ public class ConfirmOrderUseCase implements ConfirmOrderInputPort {
         order = orderRepository.save(order);
 
         // HU-08: dispara el evento que arranca la Lambda (generación de guía) y Notifications
-        eventPublisher.publishOrderConfirmed(order.getId());
+        eventPublisher.publishOrderConfirmed(order.getId(), order.getCustomerEmail());
 
         return order;
     }

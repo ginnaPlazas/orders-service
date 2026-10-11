@@ -25,9 +25,23 @@ public class ProductEntity {
         this.weightKg = weightKg;
     }
 
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public BigDecimal getWeightKg() { return weightKg; }
-    public OrderEntity getOrder() { return order; }
-    public void setOrder(OrderEntity order) { this.order = order; }
+    public Long getId() { 
+        return id; 
+    }
+
+    public String getName() { 
+        return name; 
+     }
+
+    public BigDecimal getWeightKg() { 
+        return weightKg; 
+    }
+
+    public OrderEntity getOrder() { 
+        return order; 
+    }
+
+    public void setOrder(OrderEntity order) { 
+        this.order = order; 
+    }
 }

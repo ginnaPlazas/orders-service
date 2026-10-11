@@ -13,6 +13,11 @@ public final class Address {
         this.cityId = cityId;
     }
 
-    public int getDepartmentId() { return departmentId; }
-    public int getCityId() { return cityId; }
+    public int getDepartmentId() { 
+        return departmentId; 
+    }
+
+    public int getCityId() { 
+        return cityId; 
+    }
 }

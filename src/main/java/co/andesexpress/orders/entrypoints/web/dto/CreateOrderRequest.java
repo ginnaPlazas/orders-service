@@ -1,6 +1,7 @@
 package co.andesexpress.orders.entrypoints.web.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,10 @@ public class CreateOrderRequest {
 
     @NotBlank(message = "La clave de idempotencia es obligatoria")
     public String idempotencyKey;
+
+    @NotBlank
+    @Email 
+    public String customerEmail;
 
     @NotNull(message = "El origen es obligatorio")
     @Valid

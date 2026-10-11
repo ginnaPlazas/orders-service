@@ -40,6 +40,7 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
         OrderEntity entity = new OrderEntity();
         entity.setId(order.getId());
         entity.setIdempotencyKey(order.getIdempotencyKey());
+        entity.setCustomerEmail(order.getCustomerEmail());
         entity.setOriginDepartmentId(order.getOrigin().getDepartmentId());
         entity.setOriginCityId(order.getOrigin().getCityId());
         entity.setDestinationDepartmentId(order.getDestination().getDepartmentId());
@@ -71,6 +72,7 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
         Order order = Order.reconstruct(
                 entity.getId(),
                 entity.getIdempotencyKey(),
+                entity.getCustomerEmail(),
                 new Address(entity.getOriginDepartmentId(), entity.getOriginCityId()),
                 new Address(entity.getDestinationDepartmentId(), entity.getDestinationCityId()),
                 products,
