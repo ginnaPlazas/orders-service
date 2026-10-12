@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://orders-db.clbizfrtbhy5.us-east-1.rds.amazonaws.com:5432/orders_db
+    username: postgres
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
