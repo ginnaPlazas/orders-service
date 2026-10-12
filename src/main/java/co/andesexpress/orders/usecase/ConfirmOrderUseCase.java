@@ -22,6 +22,7 @@ public class ConfirmOrderUseCase implements ConfirmOrderInputPort {
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         order.confirm(); // valida internamente que esté en VALIDATED
+        order.markGuideGenerating();
         order = orderRepository.save(order);
 
         // HU-08: dispara el evento que arranca la Lambda (generación de guía) y Notifications
