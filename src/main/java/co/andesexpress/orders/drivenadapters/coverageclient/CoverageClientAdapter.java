@@ -11,6 +11,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -25,10 +26,10 @@ public class CoverageClientAdapter implements CoverageClientPort {
     private final WebClient webClient;
 
     public CoverageClientAdapter(WebClient.Builder webClientBuilder,
-                                 @org.springframework.beans.factory.annotation.Value("${coverage.base-url:http://localhost:8081}") String baseUrl) {
-        this.webClient = webClientBuilder
-                .baseUrl(baseUrl)
-                .build();
+                             @Value("${coverage.base-url}") String baseUrl) {
+    this.webClient = webClientBuilder
+            .baseUrl(baseUrl)
+            .build();
     }
 
     @Override

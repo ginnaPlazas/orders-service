@@ -2,6 +2,9 @@ spring:
   application:
     name: orders-service
 
+server:
+  port: 8082
+
 resilience4j:
   retry:
     instances:
@@ -9,13 +12,11 @@ resilience4j:
         max-attempts: 3
         wait-duration: 500ms
         retry-exceptions:
-          - java.lang.Exception
 
 aws:
   region: us-east-1
   sqs:
-    endpoint: http://localhost:4566
-    order-confirmed-queue-url: http://sqs.us-east-1.localhost:4566/000000000000/pedido-confirmado-queue
+    order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/XXXXXXXXXXXX/pedido-confirmado-queue
 
 coverage:
   base-url: http://127.0.0.1:8082
