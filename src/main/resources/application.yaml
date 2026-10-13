@@ -4,7 +4,7 @@ spring:
 
 server:
   port: 8082
-
+  
 resilience4j:
   retry:
     instances:
@@ -19,4 +19,4 @@ aws:
     order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/XXXXXXXXXXXX/pedido-confirmado-queue
 
 coverage:
-  base-url: http://127.0.0.1:8082
+  base-url: http://127.0.0.1:8081
