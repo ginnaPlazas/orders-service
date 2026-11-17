@@ -32,7 +32,11 @@ public class MarkGuideReadyUseCase implements MarkGuideReadyInputPort {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new OrderNotFoundException(orderId));
 
-            order.markGuideReady(guideKey); // valida que esté en GUIDE_GENERATING y que la clave no esté vacía
+            // Valida que esté en GUIDE_GENERATING y que la clave no esté vacía.
+            // Idempotente: la misma clave sobre un pedido ya listo no guarda ni emite otro GuiaLista.
+            if (!order.markGuideReady(guideKey)) {
+                return order;
+            }
             Order saved = orderRepository.save(order);
 
             // RF-5: notificar al cliente que la guía está lista (evento GuiaLista vía outbox).

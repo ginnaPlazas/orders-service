@@ -14,6 +14,9 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
 - **S4 Guide-ready event (RF-5).** ReadMe RF-5: "Notificar al cliente … cuando el pedido es confirmado y cuando la guía está lista." When `PUT /orders/{id}/guide` moves the order to `GUIDE_READY`, Orders emits `{"eventType":"GuiaLista","orderId":"…","customerEmail":"…"}` (attribute `eventType=GuiaLista`) through the same mechanism as S3/S5.
 - **S5 Transactional outbox (at-least-once).** ReadMe: "las colas típicas entregan mensajes al menos una vez … el diseño debe tolerar duplicados". The state change of `confirm` and of `markGuideReady` and its event are stored in ONE database transaction (outbox table). A scheduled relay publishes pending outbox events to SNS, marks an event published only after SNS accepted it, and leaves it pending (retried on the next run, attempt count + last error recorded) when publishing fails. `POST /orders/{id}/confirm` returns 200 even when SNS is down; the event is published later. Domain/usecase stay framework-free (transaction and outbox behind output ports). The relay must never crash the app or the test context when AWS is unreachable.
 - **S6 Guide stored in S3, URL presigned on read (RF-4).** ReadMe: "el microservicio de Orders debe exponer la URL (puede ser prefirmada)". Lambda contract: `PUT /orders/{id}/guide` body `{"guideKey":"<S3 object key>"}` (`guideKey` not blank, 400 otherwise). Orders persists the key, never a URL. Every response that returns an order in `GUIDE_READY` exposes `guideUrl` as a presigned S3 GET URL generated at response time (bucket `aws.s3.guides-bucket`, env `GUIDES_BUCKET`, TTL `aws.s3.guide-url-ttl`, default 15m); otherwise `guideUrl` is null. The response field name `guideUrl` is unchanged (the frontend reads it). The signer is an output port; no output port is called from an entry point.
+- **S8 No WireMock stub.** User: "Quitar el stub WireMock (coveragestub) y apuntar al Coverage Service real." `coverage-stub/` is removed. `coverage.base-url` points to the real Coverage Service and is overridable with `COVERAGE_BASE_URL` (default `http://127.0.0.1:8081`).
+- **S9 Idempotent MarkGuideReady.** User: "evitar error InvalidOrderStateException si llega dos veces MarkGuideReady". A repeated `PUT /orders/{id}/guide` with the same `guideKey` on a `GUIDE_READY` order returns 200 with the unchanged order, saves nothing and emits no second `GuiaLista`. A different `guideKey` on a `GUIDE_READY` order is a real conflict and stays 409. Other statuses keep today's 409.
+- **S10 AWS profile.** User: "Configurar perfil application-aws.yaml para RDS/SQS reales." The `aws` profile declares RDS (`DB_PASSWORD`), the SNS topic (`ORDER_EVENTS_TOPIC_ARN`; SNS replaces direct SQS publishing per S3), the S3 bucket (`GUIDES_BUCKET`), the region (`AWS_REGION`) and Coverage (`COVERAGE_BASE_URL`). Defaults keep README "Opción B" (local app against RDS with only `DB_PASSWORD`) working.
 - **S7 Docs.** `orders-service/README.md` documents the new request/response fields, the Lambda contract (S6), the SNS topology (S3), the outbox (S5), the idempotency rules (S2) and the new env vars.
 
 ## Tasks
@@ -23,6 +26,7 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
 | T1 | S1, S2 | delegated (writer "creation", worktree `feat/orders-creation`) — parallel-units trigger | done (34/34 green, parent re-run) | 14b2509 (on `feat/orders-creation`) |
 | T2 | S3, S4, S5, S6 | delegated (writer "messaging", worktree `feat/orders-messaging`) — parallel-units trigger | done (41/41 green in worktree, parent re-run) | 0f720d7 (on `feat/orders-messaging`) |
 | T3 | S7 + merge | inline (parent) | done (merged suite 63/63 green) | 812cd3b, a74bca3 (merges), README commit below |
+| T5 | S8, S9, S10 | inline (parent; small, one understood change) | done (RED 1 failure → GREEN 65/65) | see commit after c7f6291 |
 | T4 | all | independent verifier — Risk items 1 (schema: new columns + outbox table), 3 (PUT /guide contract), 4 (outbox relay concurrency), 5 (new S3 dependency) | pending | — |
 
 ## Log
@@ -38,4 +42,14 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
 - **L6 (T3 done):**
   - Merge conflicts in `Order.java`, `PostgresOrderRepositoryAdapter`, `FakeOrderRepository`: resolved by keeping both units, with `guideUrl` → `guideKey` in the 12-arg `reconstruct`.
   - `OrderWebMapperTest` adapted to `toResponse(OrderView)`. Merged suite 63/63 green.
-  - README rewritten for S7. It also corrects the documented port 8080 → 8082 and local Postgres 5432 → 5434 (docker-compose.yml:10).
+  - README rewritten for S7.
+- **L7 (2026-11-17, user):** "Quitar el stub WireMock (coveragestub) y apuntar al Coverage Service real. • Idempotencia: evitar duplicar pedidos en reintentos y evitar error InvalidOrderStateException si llega dos veces MarkGuideReady. • Configurar perfil application-aws.yaml para RDS/SQS reales. Esto ya esta hecho?". Status found:
+  - The code already used the real Coverage URL, but `coverage-stub/` was still in the repo.
+  - Create idempotency was already done (S2).
+  - A repeated MarkGuideReady returned 409; the domain throws `IllegalStateException` (`InvalidOrderStateException` is unused).
+  - The aws profile had RDS only.
+  - Then the user said "haz todo lo que hace falta que te envie", which became S8-S10.
+- **L8 (T5 done):**
+  - RED: `guiaListaRepetidaConLaMismaClave…` failed with IllegalStateException; GREEN: 65/65.
+  - `Order.markGuideReady` now returns `false` for a same-key replay, and the use case then skips the save and the outbox write.
+  - The different-key test pins the 409 behavior. It also corrects the documented port 8080 → 8082 and local Postgres 5432 → 5434 (docker-compose.yml:10).

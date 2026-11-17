@@ -105,7 +105,17 @@ public final class Order {
         this.status = OrderStatus.GUIDE_GENERATING;
     }
 
-    public void markGuideReady(String guideKey) {
+    /**
+     * @return true si el pedido pasó a GUIDE_READY; false si ya estaba listo con la misma clave
+     * (entrega repetida de la Lambda, que llega al menos una vez), en cuyo caso no cambia nada.
+     */
+    public boolean markGuideReady(String guideKey) {
+        if (status == OrderStatus.GUIDE_READY && this.guideKey != null && this.guideKey.equals(guideKey)) {
+            return false;
+        }
+        if (status == OrderStatus.GUIDE_READY) {
+            throw new IllegalStateException("El pedido ya tiene registrada otra guía");
+        }
         if (status != OrderStatus.GUIDE_GENERATING) {
             throw new IllegalStateException("Solo un pedido generando guía puede marcarse como lista");
         }
@@ -114,6 +124,7 @@ public final class Order {
         }
         this.guideKey = guideKey;
         this.status = OrderStatus.GUIDE_READY;
+        return true;
     }
 
     public String getId() { 

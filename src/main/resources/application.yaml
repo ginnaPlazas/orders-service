@@ -33,4 +33,5 @@ orders:
       batch-size: 50
 
 coverage:
-  base-url: http://127.0.0.1:8081
+  # Coverage Service real; COVERAGE_BASE_URL lo sobrescribe
+  base-url: ${COVERAGE_BASE_URL:http://127.0.0.1:8081}

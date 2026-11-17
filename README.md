@@ -58,6 +58,8 @@ co.andesexpress.orders
 | Variable | Por defecto | Uso |
 |---|---|---|
 | `DB_PASSWORD` | — | Contraseña de RDS (perfil `aws`) |
+| `COVERAGE_BASE_URL` | `http://127.0.0.1:8081` | URL del Coverage Service real |
+| `AWS_REGION` | `us-east-1` | Región de SNS y S3 (perfil `aws`) |
 | `ORDER_EVENTS_TOPIC_ARN` | vacío | ARN del tópico SNS de eventos de pedidos. Si está vacío, los eventos quedan pendientes en el outbox |
 | `GUIDES_BUCKET` | vacío | Bucket S3 donde la Lambda guarda los PDF. Si está vacío, `guideUrl` sale `null` |
 | `GUIDE_URL_TTL` | `15m` | Vigencia de la URL prefirmada de la guía |
@@ -131,7 +133,7 @@ curl -X POST http://localhost:8082/orders \
 
 - Los IDs de departamento y municipio son los de la **API Colombia**, no códigos DANE.
 - `shippingType` es opcional: `STANDARD` (por defecto) o `EXPRESS`. Un valor distinto responde `400`. Es informativo: **no cambia la tarifa** y no se envía a Coverage.
-- Este endpoint necesita Coverage corriendo en `localhost:8081`. Sin Coverage, responde `503`.
+- Este endpoint llama al **Coverage Service real** (`COVERAGE_BASE_URL`, por defecto `localhost:8081`). No hay stub: sin Coverage, responde `503`.
 
 La respuesta incluye `id`, `status`, `origin`, `destination`, `shippingType`, `zone`, `fare` y `guideUrl` (`null` hasta que la guía esté lista).
 
@@ -202,6 +204,7 @@ curl -X PUT http://localhost:8082/orders/{orderId}/guide \
 
 - `guideKey` es la **clave del objeto en S3** dentro de `GUIDES_BUCKET`, no una URL. Si viene vacía, responde `400`.
 - El pedido debe estar en `GUIDE_GENERATING`, si no responde `409`.
+- **Idempotente:** si la llamada llega repetida con la **misma** `guideKey` sobre un pedido ya en `GUIDE_READY`, responde `200` con el pedido sin cambios y **no** emite otro `GuiaLista`. Con una `guideKey` **distinta** responde `409`, porque el pedido ya tiene otra guía registrada.
 - Orders guarda solo la clave. Cada respuesta de un pedido en `GUIDE_READY` incluye `guideUrl` como **URL prefirmada** generada en ese momento, con vigencia `GUIDE_URL_TTL`. Por eso nunca se guarda una URL que después expire.
 
 ## Manejo de errores

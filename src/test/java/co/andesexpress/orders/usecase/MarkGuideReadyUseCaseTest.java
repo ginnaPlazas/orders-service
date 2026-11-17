@@ -80,6 +80,31 @@ class MarkGuideReadyUseCaseTest {
     }
 
     @Test
+    void guiaListaRepetidaConLaMismaClave_devuelveElPedidoSinCambiosNiNuevoEvento() {
+        repository.save(TestData.orderIn(OrderStatus.GUIDE_GENERATING));
+        useCase.markGuideReady("order-1", KEY);
+        assertEquals(1, outbox.all().size());
+
+        Order again = assertDoesNotThrow(() -> useCase.markGuideReady("order-1", KEY));
+
+        assertEquals(OrderStatus.GUIDE_READY, again.getStatus());
+        assertEquals(KEY, again.getGuideKey());
+        Order stored = repository.findById("order-1").orElseThrow();
+        assertEquals(OrderStatus.GUIDE_READY, stored.getStatus());
+        assertEquals(KEY, stored.getGuideKey());
+        assertEquals(1, outbox.all().size(), "la entrega repetida no debe generar otro GuiaLista");
+    }
+
+    @Test
+    void guiaListaConOtraClave_lanzaExcepcionDeEstadoYConservaLaClaveOriginal() {
+        repository.save(TestData.orderReady(KEY));
+
+        assertThrows(IllegalStateException.class, () -> useCase.markGuideReady("order-1", "guias/otra.pdf"));
+        assertEquals(KEY, repository.findById("order-1").orElseThrow().getGuideKey());
+        assertTrue(outbox.all().isEmpty());
+    }
+
+    @Test
     void pedidoInexistente_lanzaOrderNotFound() {
         assertThrows(OrderNotFoundException.class, () -> useCase.markGuideReady("no-existe", KEY));
     }
