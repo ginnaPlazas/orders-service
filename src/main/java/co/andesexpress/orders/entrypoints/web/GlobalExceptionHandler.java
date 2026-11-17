@@ -2,6 +2,7 @@ package co.andesexpress.orders.entrypoints.web;
 
 import co.andesexpress.orders.domain.exception.CoverageServiceUnavailableException;
 import co.andesexpress.orders.domain.exception.DestinationRejectedException;
+import co.andesexpress.orders.domain.exception.DuplicateIdempotencyKeyException;
 import co.andesexpress.orders.domain.exception.OrderNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CoverageServiceUnavailableException.class)
     public ResponseEntity<String> handleCoverageUnavailable(CoverageServiceUnavailableException e) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Coverage no disponible: " + e.getMessage());
+    }
+
+    // Red de seguridad: CreateOrderUseCase ya resuelve la clave duplicada como un reintento
+    @ExceptionHandler(DuplicateIdempotencyKeyException.class)
+    public ResponseEntity<String> handleDuplicateIdempotencyKey(DuplicateIdempotencyKeyException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
     }
 
     @ExceptionHandler(IllegalStateException.class)

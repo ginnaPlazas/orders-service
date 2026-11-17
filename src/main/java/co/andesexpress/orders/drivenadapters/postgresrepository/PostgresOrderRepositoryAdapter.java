@@ -4,7 +4,10 @@ import co.andesexpress.orders.domain.model.*;
 import co.andesexpress.orders.domain.port.out.OrderRepositoryPort;
 import co.andesexpress.orders.drivenadapters.postgresrepository.entity.OrderEntity;
 import co.andesexpress.orders.drivenadapters.postgresrepository.entity.ProductEntity;
+import co.andesexpress.orders.domain.exception.DuplicateIdempotencyKeyException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,16 +25,31 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
     @Override
     public Order save(Order order) {
         OrderEntity entity = toEntity(order);
-        OrderEntity saved = jpaRepository.save(entity);
-        return toDomain(saved);
+        try {
+            OrderEntity saved = jpaRepository.save(entity);
+            return toDomain(saved);
+        } catch (DataIntegrityViolationException e) {
+            // UNIQUE(idempotencyKey): una petición concurrente guardó primero otro pedido con la misma clave
+            boolean keyTakenByAnotherOrder = jpaRepository.findByIdempotencyKey(order.getIdempotencyKey())
+                    .filter(existing -> !existing.getId().equals(order.getId()))
+                    .isPresent();
+            if (keyTakenByAnotherOrder) {
+                throw new DuplicateIdempotencyKeyException(order.getIdempotencyKey(), e);
+            }
+            throw e;
+        }
     }
 
+    // Las lecturas abren su propia transacción para poder cargar los productos (colección lazy)
+    // también fuera de una petición HTTP.
     @Override
+    @Transactional(readOnly = true)
     public Optional<Order> findById(String orderId) {
         return jpaRepository.findById(orderId).map(this::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Order> findByIdempotencyKey(String idempotencyKey) {
         return jpaRepository.findByIdempotencyKey(idempotencyKey).map(this::toDomain);
     }
@@ -46,6 +64,8 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
         entity.setDestinationDepartmentId(order.getDestination().getDepartmentId());
         entity.setDestinationCityId(order.getDestination().getCityId());
         entity.setStatus(order.getStatus().name());
+        entity.setShippingType(order.getShippingType().name());
+        entity.setRejectionReason(order.getRejectionReason());
         entity.setGuideUrl(order.getGuideUrl());
         if (order.getZone() != null) entity.setZone(order.getZone().name());
         if (order.getFare() != null) {
@@ -76,10 +96,13 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
                 new Address(entity.getOriginDepartmentId(), entity.getOriginCityId()),
                 new Address(entity.getDestinationDepartmentId(), entity.getDestinationCityId()),
                 products,
+                // Filas anteriores a la columna shippingType: se leen como STANDARD
+                entity.getShippingType() != null ? ShippingType.valueOf(entity.getShippingType()) : ShippingType.STANDARD,
                 OrderStatus.valueOf(entity.getStatus()),
                 entity.getZone() != null ? Zone.valueOf(entity.getZone()) : null,
                 (entity.getFareAmount() != null) ? new Fare(entity.getFareAmount(), entity.getFareCurrency()) : null,
-                entity.getGuideUrl()
+                entity.getGuideUrl(),
+                entity.getRejectionReason()
         );
         return order;
     }
