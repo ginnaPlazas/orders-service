@@ -1,5 +1,6 @@
 package co.andesexpress.orders.entrypoints.web.dto;
 
+import co.andesexpress.orders.domain.model.ShippingType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +31,9 @@ public class CreateOrderRequest {
     @NotEmpty(message = "El pedido debe tener al menos un producto")
     @Valid
     public List<ProductDto> products;
+
+    // Opcional: si no llega se usa STANDARD; un valor desconocido no se puede leer y responde 400
+    public ShippingType shippingType;
 
     public static class AddressDto {
         @Positive(message = "El id del departamento debe ser positivo")

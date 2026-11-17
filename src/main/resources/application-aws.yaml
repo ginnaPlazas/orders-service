@@ -7,6 +7,15 @@ spring:
     hibernate:
       ddl-auto: update
 
+# Recursos reales de AWS. Los valores llegan por variables de entorno (rotan por sesión del Learner Lab).
 aws:
-  sqs:
-    order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/337072027799/AndesExpressQueue
+  region: ${AWS_REGION:us-east-1}
+  sns:
+    # Tópico de eventos (fan-out a las colas SQS de la Lambda y de Notifications)
+    order-events-topic-arn: ${ORDER_EVENTS_TOPIC_ARN:}
+  s3:
+    guides-bucket: ${GUIDES_BUCKET:}
+
+coverage:
+  # Coverage Service real (en local corre en 8081)
+  base-url: ${COVERAGE_BASE_URL:http://127.0.0.1:8081}

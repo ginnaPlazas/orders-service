@@ -12,13 +12,20 @@ public final class Order {
     private final Address origin;
     private final Address destination;
     private final List<Product> products;
+    private final ShippingType shippingType;
     private OrderStatus status;
     private Fare fare;
     private Zone zone;
-    private String guideUrl;
-    
+    private String guideKey;
+    private String rejectionReason;
 
     public Order(String idempotencyKey, String customerEmail, Address origin, Address destination, List<Product> products) {
+        this(idempotencyKey, customerEmail, origin, destination, products, ShippingType.STANDARD);
+    }
+
+    /** Si no llega tipo de envío se usa STANDARD. */
+    public Order(String idempotencyKey, String customerEmail, Address origin, Address destination, List<Product> products,
+                 ShippingType shippingType) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("La clave de idempotencia es obligatoria");
         }
@@ -38,17 +45,26 @@ public final class Order {
         this.origin = origin;
         this.destination = destination;
         this.products = List.copyOf(products);
+        this.shippingType = shippingType == null ? ShippingType.STANDARD : shippingType;
         this.status = OrderStatus.PENDING_VALIDATION;
     }
 
     public static Order reconstruct(String id, String idempotencyKey, String customerEmail, Address origin, Address destination,
-                                     List<Product> products, OrderStatus status, Zone zone, Fare fare, String guideUrl) {
-        Order order = new Order(idempotencyKey, customerEmail ,origin, destination, products);
+                                     List<Product> products, OrderStatus status, Zone zone, Fare fare, String guideKey) {
+        return reconstruct(id, idempotencyKey, customerEmail, origin, destination, products, ShippingType.STANDARD,
+                status, zone, fare, guideKey, null);
+    }
+
+    public static Order reconstruct(String id, String idempotencyKey, String customerEmail, Address origin, Address destination,
+                                     List<Product> products, ShippingType shippingType, OrderStatus status, Zone zone,
+                                     Fare fare, String guideKey, String rejectionReason) {
+        Order order = new Order(idempotencyKey, customerEmail ,origin, destination, products, shippingType);
         order.id = id;
         order.status = status;
         order.zone = zone;
         order.fare = fare;
-        order.guideUrl = guideUrl;
+        order.guideKey = guideKey;
+        order.rejectionReason = rejectionReason;
         return order;
     }
 
@@ -67,10 +83,11 @@ public final class Order {
         this.status = OrderStatus.VALIDATED;
     }
 
-    public void markRejected() {
+    public void markRejected(String rejectionReason) {
         if (status != OrderStatus.PENDING_VALIDATION) {
             throw new IllegalStateException("Solo un pedido pendiente de validación puede ser rechazado");
         }
+        this.rejectionReason = rejectionReason;
         this.status = OrderStatus.REJECTED;
     }
 
@@ -88,12 +105,26 @@ public final class Order {
         this.status = OrderStatus.GUIDE_GENERATING;
     }
 
-    public void markGuideReady(String guideUrl) {
+    /**
+     * @return true si el pedido pasó a GUIDE_READY; false si ya estaba listo con la misma clave
+     * (entrega repetida de la Lambda, que llega al menos una vez), en cuyo caso no cambia nada.
+     */
+    public boolean markGuideReady(String guideKey) {
+        if (status == OrderStatus.GUIDE_READY && this.guideKey != null && this.guideKey.equals(guideKey)) {
+            return false;
+        }
+        if (status == OrderStatus.GUIDE_READY) {
+            throw new IllegalStateException("El pedido ya tiene registrada otra guía");
+        }
         if (status != OrderStatus.GUIDE_GENERATING) {
             throw new IllegalStateException("Solo un pedido generando guía puede marcarse como lista");
         }
-        this.guideUrl = guideUrl;
+        if (guideKey == null || guideKey.isBlank()) {
+            throw new IllegalArgumentException("La clave de la guía en S3 es obligatoria");
+        }
+        this.guideKey = guideKey;
         this.status = OrderStatus.GUIDE_READY;
+        return true;
     }
 
     public String getId() { 
@@ -132,7 +163,17 @@ public final class Order {
         return zone; 
     }
 
-    public String getGuideUrl() { 
-        return guideUrl; 
+    /** Clave del objeto PDF de la guía en S3 (nunca una URL: la URL prefirmada se genera al leer). */
+    public String getGuideKey() {
+        return guideKey;
+    }
+
+    public ShippingType getShippingType() {
+        return shippingType;
+    }
+
+    /** Mensaje con el que Coverage rechazó el destino; null si el pedido no fue rechazado. */
+    public String getRejectionReason() {
+        return rejectionReason;
     }
 }

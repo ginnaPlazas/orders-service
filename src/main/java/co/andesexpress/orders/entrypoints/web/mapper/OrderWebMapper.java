@@ -18,13 +18,16 @@ public class OrderWebMapper {
                 .map(p -> new Product(p.name, p.weightKg))
                 .collect(Collectors.toList());
 
-        return new CreateOrderCommand(request.idempotencyKey, request.customerEmail, origin, destination, products);
+        return new CreateOrderCommand(request.idempotencyKey, request.customerEmail, origin, destination, products,
+                request.shippingType);
     }
 
-    public OrderResponse toResponse(Order order) {
+    public OrderResponse toResponse(OrderView view) {
+        Order order = view.order();
         OrderResponse response = new OrderResponse();
         response.id = order.getId();
         response.status = order.getStatus().name();
+        response.shippingType = order.getShippingType().name();
 
         response.origin = new OrderResponse.AddressDto();
         response.origin.departmentId = order.getOrigin().getDepartmentId();
@@ -42,7 +45,7 @@ public class OrderWebMapper {
             response.fare.amount = order.getFare().getAmount();
             response.fare.currency = order.getFare().getCurrency();
         }
-        response.guideUrl = order.getGuideUrl();
+        response.guideUrl = view.guideUrl();
 
         return response;
     }

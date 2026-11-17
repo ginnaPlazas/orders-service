@@ -25,7 +25,13 @@ public class OrderEntity {
     private String zone;
     private BigDecimal fareAmount;
     private String fareCurrency;
-    private String guideUrl;
+    // Clave del PDF de la guía en S3 (nullable). La URL prefirmada se genera al leer, nunca se guarda.
+    private String guideKey;
+
+    // Columnas nuevas, nullable: las filas antiguas quedan en NULL (shippingType NULL se lee como STANDARD)
+    private String shippingType;
+    @Column(length = 1000)
+    private String rejectionReason;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductEntity> products;
@@ -110,11 +116,25 @@ public class OrderEntity {
         this.fareCurrency = v; 
     }
 
-    public String getGuideUrl() { 
-        return guideUrl; 
+    public String getGuideKey() {
+        return guideKey;
     }
-    public void setGuideUrl(String guideUrl) { 
-        this.guideUrl = guideUrl; 
+    public void setGuideKey(String guideKey) {
+        this.guideKey = guideKey;
+    }
+
+    public String getShippingType() {
+        return shippingType;
+    }
+    public void setShippingType(String shippingType) {
+        this.shippingType = shippingType;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 
     public List<ProductEntity> getProducts() { 

@@ -27,9 +27,19 @@ final class TestData {
         return new CreateOrderCommand(key, customerEmail(), origin(), destination(), products());
     }
 
+    static CreateOrderCommand command(String key, ShippingType shippingType) {
+        return new CreateOrderCommand(key, customerEmail(), origin(), destination(), products(), shippingType);
+    }
+
     /** Pedido en el estado que le pidas. */
     static Order orderIn(OrderStatus status) {
         return Order.reconstruct("order-1", "key-1", customerEmail(), origin(), destination(), products(),
                 status, null, null, null);
+    }
+
+    /** Pedido en GUIDE_READY con la guía guardada bajo {@code guideKey}. */
+    static Order orderReady(String guideKey) {
+        return Order.reconstruct("order-1", "key-1", customerEmail(), origin(), destination(), products(),
+                OrderStatus.GUIDE_READY, null, null, guideKey);
     }
 }

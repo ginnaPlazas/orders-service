@@ -40,25 +40,24 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         Order order = createOrderInputPort.createOrder(mapper.toCommand(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(order));
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(getOrderStatusInputPort.toView(order)));
     }
 
     @PostMapping("/{orderId}/confirm")
     public ResponseEntity<OrderResponse> confirmOrder(@PathVariable String orderId) {
         Order order = confirmOrderInputPort.confirmOrder(orderId);
-        return ResponseEntity.ok(mapper.toResponse(order));
+        return ResponseEntity.ok(mapper.toResponse(getOrderStatusInputPort.toView(order)));
     }
 
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponse> getOrderStatus(@PathVariable String orderId) {
-        Order order = getOrderStatusInputPort.getOrderStatus(orderId);
-        return ResponseEntity.ok(mapper.toResponse(order));
+        return ResponseEntity.ok(mapper.toResponse(getOrderStatusInputPort.getOrderStatus(orderId)));
     }
 
     @PutMapping("/{orderId}/guide")
     public ResponseEntity<OrderResponse> markGuideReady(@PathVariable String orderId,
                                                         @Valid @RequestBody GuideReadyRequest request) {
-        Order order = markGuideReadyInputPort.markGuideReady(orderId, request.guideUrl);
-        return ResponseEntity.ok(mapper.toResponse(order));
+        Order order = markGuideReadyInputPort.markGuideReady(orderId, request.guideKey);
+        return ResponseEntity.ok(mapper.toResponse(getOrderStatusInputPort.toView(order)));
     }
 }
