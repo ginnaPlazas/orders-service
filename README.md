@@ -147,7 +147,10 @@ Reenviar la misma solicitud nunca crea un pedido duplicado. Si la clave ya exist
 | `REJECTED` | `400` con el mismo mensaje de rechazo original |
 | Cualquier otro | `201` con el pedido tal cual está |
 
-Si dos solicitudes con la misma clave llegan a la vez, la restricción `UNIQUE` de la base de datos deja pasar solo una. La otra lee el pedido guardado y aplica las mismas reglas, sin `500`.
+Si dos solicitudes con la misma clave llegan a la vez (doble clic, o un reintento mientras Coverage todavía responde), ninguna responde `500`:
+
+- La restricción `UNIQUE` de la base de datos deja crear un solo pedido. La solicitud que pierde **no vuelve a validar**: devuelve lo que la otra guardó (`400` si quedó `REJECTED`, `201` en cualquier otro caso, aunque todavía esté en `PENDING_VALIDATION`).
+- Si dos solicitudes guardan el mismo pedido al mismo tiempo, la que choca relee el pedido y devuelve lo que quedó guardado.
 
 ## Ciclo de vida del pedido
 

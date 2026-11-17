@@ -4,8 +4,10 @@ import co.andesexpress.orders.domain.model.*;
 import co.andesexpress.orders.domain.port.out.OrderRepositoryPort;
 import co.andesexpress.orders.drivenadapters.postgresrepository.entity.OrderEntity;
 import co.andesexpress.orders.drivenadapters.postgresrepository.entity.ProductEntity;
+import co.andesexpress.orders.domain.exception.ConcurrentOrderUpdateException;
 import co.andesexpress.orders.domain.exception.DuplicateIdempotencyKeyException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,9 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
         try {
             OrderEntity saved = jpaRepository.save(entity);
             return toDomain(saved);
+        } catch (OptimisticLockingFailureException e) {
+            // Dos escrituras simultáneas del mismo pedido: la otra reemplazó los productos primero
+            throw new ConcurrentOrderUpdateException(order.getId(), e);
         } catch (DataIntegrityViolationException e) {
             // UNIQUE(idempotencyKey): una petición concurrente guardó primero otro pedido con la misma clave
             boolean keyTakenByAnotherOrder = jpaRepository.findByIdempotencyKey(order.getIdempotencyKey())

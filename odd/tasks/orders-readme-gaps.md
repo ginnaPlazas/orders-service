@@ -9,7 +9,7 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
   - existing order in `PENDING_VALIDATION` (Coverage failed earlier) → validation against Coverage runs again and the normal flow continues (`VALIDATED` → 201, rejected → `REJECTED` + 400, Coverage still down → 503 and the order stays `PENDING_VALIDATION`);
   - existing order in `REJECTED` → 400 again with the original rejection message (persist it);
   - any other status → the existing order is returned unchanged (201, as today).
-  Two concurrent requests with the same key must not produce a 500: the loser returns the stored order (same rules as a replay).
+  Two concurrent requests with the same key must not produce a 500, including when the first one is still validating against Coverage (double click, or a client retry with a slow Coverage). The request that loses the insert race does not validate again: it returns what the other request stored (`REJECTED` → 400, anything else → 201 with that order, possibly still `PENDING_VALIDATION`). A save that collides with a concurrent write of the same order re-reads the order and returns the stored result. (Rewritten after verifier blocker B1; see L9.)
 - **S3 Fan-out through SNS.** ReadMe diagram: "(evento: PedidoConfirmado) → SQS/SNS" feeding both "AWS Lambda (genera PDF guía)" and "[Notifications MS]". Orders publishes its events to an SNS topic (`aws.sns.order-events-topic-arn`, env `ORDER_EVENTS_TOPIC_ARN`) instead of one SQS queue, with SNS message attribute `eventType` (String). Message body JSON is built with a JSON library (no hand-made escaping) and keeps today's shape for `PedidoConfirmado`: `{"eventType":"PedidoConfirmado","orderId":"…","customerEmail":"…"}`. Documented topology: topic → SQS queue for the Lambda (filter policy `eventType = PedidoConfirmado`) and topic → SQS queue for Notifications (no filter, Raw Message Delivery enabled so Notifications parses the body unchanged). Orders no longer publishes to SQS directly.
 - **S4 Guide-ready event (RF-5).** ReadMe RF-5: "Notificar al cliente … cuando el pedido es confirmado y cuando la guía está lista." When `PUT /orders/{id}/guide` moves the order to `GUIDE_READY`, Orders emits `{"eventType":"GuiaLista","orderId":"…","customerEmail":"…"}` (attribute `eventType=GuiaLista`) through the same mechanism as S3/S5.
 - **S5 Transactional outbox (at-least-once).** ReadMe: "las colas típicas entregan mensajes al menos una vez … el diseño debe tolerar duplicados". The state change of `confirm` and of `markGuideReady` and its event are stored in ONE database transaction (outbox table). A scheduled relay publishes pending outbox events to SNS, marks an event published only after SNS accepted it, and leaves it pending (retried on the next run, attempt count + last error recorded) when publishing fails. `POST /orders/{id}/confirm` returns 200 even when SNS is down; the event is published later. Domain/usecase stay framework-free (transaction and outbox behind output ports). The relay must never crash the app or the test context when AWS is unreachable.
@@ -27,7 +27,8 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
 | T2 | S3, S4, S5, S6 | delegated (writer "messaging", worktree `feat/orders-messaging`) — parallel-units trigger | done (41/41 green in worktree, parent re-run) | 0f720d7 (on `feat/orders-messaging`) |
 | T3 | S7 + merge | inline (parent) | done (merged suite 63/63 green) | 812cd3b, a74bca3 (merges), README commit below |
 | T5 | S8, S9, S10 | inline (parent; small, one understood change) | done (RED 1 failure → GREEN 65/65) | see commit after c7f6291 |
-| T4 | all | independent verifier — Risk items 1 (schema: new columns + outbox table), 3 (PUT /guide contract), 4 (outbox relay concurrency), 5 (new S3 dependency) | pending | — |
+| T4 | all | independent verifier — Risk items 1 (schema: new columns + outbox table), 3 (PUT /guide contract), 4 (outbox relay concurrency), 5 (new S3 dependency) | done on c7f6291: S1, S3-S6 PASS; S2 + S7 FAIL (B1) → fixed in T6 | — |
+| T6 | S2, S7 (B1 correction) | inline (parent; one correction batch) | done (RED 2 errors → GREEN 67/67) | see commit after 3dba1e6 |
 
 ## Log
 
@@ -52,4 +53,14 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
 - **L8 (T5 done):**
   - RED: `guiaListaRepetidaConLaMismaClave…` failed with IllegalStateException; GREEN: 65/65.
   - `Order.markGuideReady` now returns `false` for a same-key replay, and the use case then skips the save and the outbox write.
-  - The different-key test pins the 409 behavior. It also corrects the documented port 8080 → 8082 and local Postgres 5432 → 5434 (docker-compose.yml:10).
+  - The different-key test pins the 409 behavior.
+- **L9 (T4 verifier on c7f6291):**
+  - S1, S3, S4, S5, S6 PASS.
+  - **B1:** two concurrent POST /orders with the same key while the first is still validating returned 500 (`ObjectOptimisticLockingFailureException` on `delete from order_products`). The loser re-validated the PENDING order and both saves rebuilt the product rows. The baseline also returned 500 (`DataIntegrityViolationException`).
+  - S7 FAIL: the README claimed "sin 500" for that case.
+  - Advisories: the live tree was uncommitted at that moment (T5, since committed as 3dba1e6); known limits as in L4/L5; the old `guide_url` column stays.
+  - The verifier scratch was removed by the parent.
+- **L10 (T6, B1 correction):**
+  - Regression test `CreateOrderConcurrentInFlightTest` has two cases: simultaneous ×3 rounds, and a retry 150 ms into the first validation. The parent added the second; it also failed (500) because a lookup that finds PENDING re-validates concurrently.
+  - RED: 2 errors. GREEN: full suite 67/67.
+  - Fix: the adapter translates `OptimisticLockingFailureException` into domain `ConcurrentOrderUpdateException`. `CreateOrderUseCase.saveOrReread` re-reads and returns the stored result. The duplicate-key path no longer re-validates (`resolveStored`). It also corrects the documented port 8080 → 8082 and local Postgres 5432 → 5434 (docker-compose.yml:10).

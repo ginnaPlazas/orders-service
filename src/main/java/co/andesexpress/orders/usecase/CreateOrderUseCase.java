@@ -1,9 +1,11 @@
 package co.andesexpress.orders.usecase;
 
 import co.andesexpress.orders.domain.exception.DestinationRejectedException;
+import co.andesexpress.orders.domain.exception.ConcurrentOrderUpdateException;
 import co.andesexpress.orders.domain.exception.DuplicateIdempotencyKeyException;
 import co.andesexpress.orders.domain.model.CreateOrderCommand;
 import co.andesexpress.orders.domain.model.Order;
+import co.andesexpress.orders.domain.model.OrderStatus;
 import co.andesexpress.orders.domain.port.in.CreateOrderInputPort;
 import co.andesexpress.orders.domain.port.out.CoverageClientPort;
 import co.andesexpress.orders.domain.port.out.CoverageClientPort.CoverageValidationResult;
@@ -49,14 +51,39 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
         try {
             order = orderRepository.save(order);
         } catch (DuplicateIdempotencyKeyException e) {
-            // Petición concurrente con la misma clave: la otra guardó primero, se trata como un reintento
+            // Petición concurrente con la misma clave: la otra guardó primero y sigue (o terminó) validando.
+            // No se valida otra vez: se devuelve lo que la otra dejó guardado.
             Order stored = orderRepository.findByIdempotencyKey(command.getIdempotencyKey()).orElseThrow(() -> e);
             log.info("Pedido con idempotencyKey={} creado por una petición concurrente (id={})",
                 command.getIdempotencyKey(), stored.getId());
-            return replay(stored);
+            return resolveStored(stored);
         }
 
         return validate(order);
+    }
+
+    /** Resultado de otra petición que ya escribió el pedido: un rechazo se repite, lo demás se devuelve. */
+    private Order resolveStored(Order stored) {
+        if (stored.getStatus() == OrderStatus.REJECTED) {
+            throw rejection(stored);
+        }
+        return stored;
+    }
+
+    private DestinationRejectedException rejection(Order order) {
+        String message = order.getRejectionReason() != null ? order.getRejectionReason() : DEFAULT_REJECTION_MESSAGE;
+        return new DestinationRejectedException(message);
+    }
+
+    /** Guarda el pedido; si otra petición lo escribió al mismo tiempo, gana lo que ella guardó. */
+    private Order saveOrReread(Order order) {
+        try {
+            return orderRepository.save(order);
+        } catch (ConcurrentOrderUpdateException e) {
+            Order stored = orderRepository.findById(order.getId()).orElseThrow(() -> e);
+            log.info("Pedido {} actualizado por una petición concurrente (estado={})", order.getId(), stored.getStatus());
+            return resolveStored(stored);
+        }
     }
 
     private Order replay(Order existing) {
@@ -66,9 +93,7 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
                 return validate(existing);
             case REJECTED:
                 // El rechazo es definitivo: mismo 400 con el mensaje original
-                String message = existing.getRejectionReason() != null
-                        ? existing.getRejectionReason() : DEFAULT_REJECTION_MESSAGE;
-                throw new DestinationRejectedException(message);
+                throw rejection(existing);
             default:
                 return existing;
         }
@@ -88,13 +113,13 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
             log.warn("Pedido {} rechazado: {}", order.getId(), message);
             // HU-02: destino inválido, rechazo con mensaje claro (se guarda para los reintentos)
             order.markRejected(message);
-            orderRepository.save(order);
+            saveOrReread(order);
             throw new DestinationRejectedException(message);
         }
 
         // Destino válido: pasa a VALIDATED con zona y tarifa
         order.markValidated(result.zone(), result.fare());
         log.info("Pedido {} validado correctamente, zona={}", order.getId(), result.zone());
-        return orderRepository.save(order);
+        return saveOrReread(order);
     }
 }
