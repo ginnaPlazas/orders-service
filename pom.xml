@@ -46,14 +46,14 @@
 			<artifactId>spring-boot-starter-aspectj</artifactId>
 		</dependency>
 
-		<!-- AWS SQS/SNS -->
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>sqs</artifactId>
-		</dependency>
+		<!-- AWS SNS (eventos del outbox) y S3 (URL prefirmada de la guía) -->
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>sns</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.h2database</groupId>

@@ -15,7 +15,7 @@ public final class Order {
     private OrderStatus status;
     private Fare fare;
     private Zone zone;
-    private String guideUrl;
+    private String guideKey;
     
 
     public Order(String idempotencyKey, String customerEmail, Address origin, Address destination, List<Product> products) {
@@ -42,13 +42,13 @@ public final class Order {
     }
 
     public static Order reconstruct(String id, String idempotencyKey, String customerEmail, Address origin, Address destination,
-                                     List<Product> products, OrderStatus status, Zone zone, Fare fare, String guideUrl) {
+                                     List<Product> products, OrderStatus status, Zone zone, Fare fare, String guideKey) {
         Order order = new Order(idempotencyKey, customerEmail ,origin, destination, products);
         order.id = id;
         order.status = status;
         order.zone = zone;
         order.fare = fare;
-        order.guideUrl = guideUrl;
+        order.guideKey = guideKey;
         return order;
     }
 
@@ -88,11 +88,14 @@ public final class Order {
         this.status = OrderStatus.GUIDE_GENERATING;
     }
 
-    public void markGuideReady(String guideUrl) {
+    public void markGuideReady(String guideKey) {
         if (status != OrderStatus.GUIDE_GENERATING) {
             throw new IllegalStateException("Solo un pedido generando guía puede marcarse como lista");
         }
-        this.guideUrl = guideUrl;
+        if (guideKey == null || guideKey.isBlank()) {
+            throw new IllegalArgumentException("La clave de la guía en S3 es obligatoria");
+        }
+        this.guideKey = guideKey;
         this.status = OrderStatus.GUIDE_READY;
     }
 
@@ -132,7 +135,8 @@ public final class Order {
         return zone; 
     }
 
-    public String getGuideUrl() { 
-        return guideUrl; 
+    /** Clave del objeto PDF de la guía en S3 (nunca una URL: la URL prefirmada se genera al leer). */
+    public String getGuideKey() {
+        return guideKey;
     }
 }

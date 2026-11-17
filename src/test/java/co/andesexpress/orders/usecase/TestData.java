@@ -32,4 +32,10 @@ final class TestData {
         return Order.reconstruct("order-1", "key-1", customerEmail(), origin(), destination(), products(),
                 status, null, null, null);
     }
+
+    /** Pedido en GUIDE_READY con la guía guardada bajo {@code guideKey}. */
+    static Order orderReady(String guideKey) {
+        return Order.reconstruct("order-1", "key-1", customerEmail(), origin(), destination(), products(),
+                OrderStatus.GUIDE_READY, null, null, guideKey);
+    }
 }

@@ -7,6 +7,4 @@ spring:
     hibernate:
       ddl-auto: update
 
-aws:
-  sqs:
-    order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/337072027799/AndesExpressQueue
+# Tópico SNS y bucket de guías: variables de entorno ORDER_EVENTS_TOPIC_ARN y GUIDES_BUCKET (ver application.yaml)

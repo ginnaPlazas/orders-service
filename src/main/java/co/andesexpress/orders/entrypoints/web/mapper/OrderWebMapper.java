@@ -21,7 +21,8 @@ public class OrderWebMapper {
         return new CreateOrderCommand(request.idempotencyKey, request.customerEmail, origin, destination, products);
     }
 
-    public OrderResponse toResponse(Order order) {
+    public OrderResponse toResponse(OrderView view) {
+        Order order = view.order();
         OrderResponse response = new OrderResponse();
         response.id = order.getId();
         response.status = order.getStatus().name();
@@ -42,7 +43,7 @@ public class OrderWebMapper {
             response.fare.amount = order.getFare().getAmount();
             response.fare.currency = order.getFare().getCurrency();
         }
-        response.guideUrl = order.getGuideUrl();
+        response.guideUrl = view.guideUrl();
 
         return response;
     }
