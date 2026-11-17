@@ -20,7 +20,7 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
 
 | ID | Specs | Route | Status | Commit |
 |---|---|---|---|---|
-| T1 | S1, S2 | delegated (writer "creation", worktree `feat/orders-creation`) — parallel-units trigger | pending | — |
+| T1 | S1, S2 | delegated (writer "creation", worktree `feat/orders-creation`) — parallel-units trigger | done (34/34 green, parent re-run) | 14b2509 (on `feat/orders-creation`) |
 | T2 | S3, S4, S5, S6 | delegated (writer "messaging", worktree `feat/orders-messaging`) — parallel-units trigger | pending | — |
 | T3 | S7 + merge | inline (parent) | pending | — |
 | T4 | all | independent verifier — Risk items 1 (schema: new columns + outbox table), 3 (PUT /guide contract), 4 (outbox relay concurrency), 5 (new S3 dependency) | pending | — |
@@ -30,3 +30,4 @@ Branch: `feat/orders-readme-gaps` (units built in isolated worktrees `feat/order
 - **L1 (2026-11-17, user):** "Pon a cada agente a realizar cada cosa, para que quede perfecto y cumpla con todo lo que dices" — refers to the Orders gap analysis: shipping type missing (RF-1), nobody publishes `GuiaLista` (RF-5), single SQS queue shared by Lambda and Notifications, event lost when SQS fails after save, order stuck in `PENDING_VALIDATION` on replay, presigned S3 URL that expires if stored.
 - **L2 (2026-11-17, user decision):** shipping type = "Solo informativo".
 - **L3:** baseline `./mvnw test` on `main` (94a1cf0) = green (exit 0). S1–S2 and S3–S6 touch overlapping files (`Order.java`, `OrderEntity`, web mapper), so each unit runs in its own worktree; the parent merges and owns `README.md`.
+- **L4 (T1 done):** S1 + S2 implemented. RED observed (15 failures + 3 errors against stubs), GREEN 34/34. Adds nullable columns `shipping_type`, `rejection_reason`; new `DuplicateIdempotencyKeyException` (adapter translates the unique-constraint violation, use case re-reads and applies replay rules; fallback 409). Adapter reads are now `@Transactional(readOnly = true)` (fixed a pre-existing LazyInitializationException outside HTTP requests). Kept overloads `Order(5 args)` / `reconstruct(...)`; the merge with T2 must rename `guideUrl` → `guideKey` in the 12-arg `reconstruct` and the adapter mapping. Known limitation, out of scope: no optimistic locking (`@Version`), so a PENDING replay racing a confirm can lose an update.
