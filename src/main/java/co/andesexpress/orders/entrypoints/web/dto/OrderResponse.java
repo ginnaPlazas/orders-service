@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public class OrderResponse {
     public String id;
     public String status;
+    public String shippingType;
     public AddressDto origin;
     public AddressDto destination;
     public String zone;

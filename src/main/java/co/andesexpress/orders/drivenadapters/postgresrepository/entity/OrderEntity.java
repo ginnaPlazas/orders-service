@@ -27,6 +27,11 @@ public class OrderEntity {
     private String fareCurrency;
     private String guideUrl;
 
+    // Columnas nuevas, nullable: las filas antiguas quedan en NULL (shippingType NULL se lee como STANDARD)
+    private String shippingType;
+    @Column(length = 1000)
+    private String rejectionReason;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductEntity> products;
 
@@ -115,6 +120,20 @@ public class OrderEntity {
     }
     public void setGuideUrl(String guideUrl) { 
         this.guideUrl = guideUrl; 
+    }
+
+    public String getShippingType() {
+        return shippingType;
+    }
+    public void setShippingType(String shippingType) {
+        this.shippingType = shippingType;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 
     public List<ProductEntity> getProducts() { 

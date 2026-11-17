@@ -12,13 +12,21 @@ public final class Order {
     private final Address origin;
     private final Address destination;
     private final List<Product> products;
+    private final ShippingType shippingType;
     private OrderStatus status;
     private Fare fare;
     private Zone zone;
     private String guideUrl;
-    
+    private String rejectionReason;
+
 
     public Order(String idempotencyKey, String customerEmail, Address origin, Address destination, List<Product> products) {
+        this(idempotencyKey, customerEmail, origin, destination, products, ShippingType.STANDARD);
+    }
+
+    /** Si no llega tipo de envío se usa STANDARD. */
+    public Order(String idempotencyKey, String customerEmail, Address origin, Address destination, List<Product> products,
+                 ShippingType shippingType) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("La clave de idempotencia es obligatoria");
         }
@@ -38,17 +46,26 @@ public final class Order {
         this.origin = origin;
         this.destination = destination;
         this.products = List.copyOf(products);
+        this.shippingType = shippingType == null ? ShippingType.STANDARD : shippingType;
         this.status = OrderStatus.PENDING_VALIDATION;
     }
 
     public static Order reconstruct(String id, String idempotencyKey, String customerEmail, Address origin, Address destination,
                                      List<Product> products, OrderStatus status, Zone zone, Fare fare, String guideUrl) {
-        Order order = new Order(idempotencyKey, customerEmail ,origin, destination, products);
+        return reconstruct(id, idempotencyKey, customerEmail, origin, destination, products, ShippingType.STANDARD,
+                status, zone, fare, guideUrl, null);
+    }
+
+    public static Order reconstruct(String id, String idempotencyKey, String customerEmail, Address origin, Address destination,
+                                     List<Product> products, ShippingType shippingType, OrderStatus status, Zone zone,
+                                     Fare fare, String guideUrl, String rejectionReason) {
+        Order order = new Order(idempotencyKey, customerEmail ,origin, destination, products, shippingType);
         order.id = id;
         order.status = status;
         order.zone = zone;
         order.fare = fare;
         order.guideUrl = guideUrl;
+        order.rejectionReason = rejectionReason;
         return order;
     }
 
@@ -67,10 +84,11 @@ public final class Order {
         this.status = OrderStatus.VALIDATED;
     }
 
-    public void markRejected() {
+    public void markRejected(String rejectionReason) {
         if (status != OrderStatus.PENDING_VALIDATION) {
             throw new IllegalStateException("Solo un pedido pendiente de validación puede ser rechazado");
         }
+        this.rejectionReason = rejectionReason;
         this.status = OrderStatus.REJECTED;
     }
 
@@ -134,5 +152,14 @@ public final class Order {
 
     public String getGuideUrl() { 
         return guideUrl; 
+    }
+
+    public ShippingType getShippingType() {
+        return shippingType;
+    }
+
+    /** Mensaje con el que Coverage rechazó el destino; null si el pedido no fue rechazado. */
+    public String getRejectionReason() {
+        return rejectionReason;
     }
 }
