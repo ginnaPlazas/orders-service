@@ -4,6 +4,7 @@ import co.andesexpress.orders.domain.model.Address;
 import co.andesexpress.orders.domain.model.CreateOrderCommand;
 import co.andesexpress.orders.domain.model.Order;
 import co.andesexpress.orders.domain.model.OrderStatus;
+import co.andesexpress.orders.domain.model.OrderView;
 import co.andesexpress.orders.domain.model.Product;
 import co.andesexpress.orders.domain.model.ShippingType;
 import co.andesexpress.orders.entrypoints.web.dto.CreateOrderRequest;
@@ -57,7 +58,7 @@ class OrderWebMapperTest {
                 new Address(15, 2), List.of(new Product("Caja", new BigDecimal("2.5"))), ShippingType.EXPRESS,
                 OrderStatus.VALIDATED, null, null, null, null);
 
-        OrderResponse response = mapper.toResponse(order);
+        OrderResponse response = mapper.toResponse(new OrderView(order, null));
 
         assertEquals("EXPRESS", response.shippingType);
         assertEquals("VALIDATED", response.status);

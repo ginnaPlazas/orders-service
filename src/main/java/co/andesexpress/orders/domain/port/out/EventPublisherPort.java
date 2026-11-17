@@ -1,5 +1,8 @@
 package co.andesexpress.orders.domain.port.out;
 
+import co.andesexpress.orders.domain.model.OutboxEvent;
+
 public interface EventPublisherPort {
-    void publishOrderConfirmed(String orderId, String customerEmail);
+    /** Publica el evento; lanza una excepción si el broker no lo aceptó. */
+    void publish(OutboxEvent event);
 }

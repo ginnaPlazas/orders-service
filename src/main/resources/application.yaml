@@ -15,8 +15,22 @@ resilience4j:
 
 aws:
   region: us-east-1
-  sqs:
-    order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/XXXXXXXXXXXX/pedido-confirmado-queue
+  sns:
+    # Tópico de eventos de pedidos (PedidoConfirmado, GuiaLista); atributo de mensaje eventType
+    order-events-topic-arn: ${ORDER_EVENTS_TOPIC_ARN:}
+  s3:
+    # Bucket donde la Lambda guarda las guías PDF; Orders solo guarda la clave y firma la URL al leer
+    guides-bucket: ${GUIDES_BUCKET:}
+    guide-url-ttl: ${GUIDE_URL_TTL:15m}
+
+orders:
+  outbox:
+    relay:
+      # Relay del outbox hacia SNS (al menos una vez); false lo desactiva (p. ej. en pruebas)
+      enabled: ${OUTBOX_RELAY_ENABLED:true}
+      initial-delay-ms: 5000
+      interval-ms: ${OUTBOX_RELAY_INTERVAL_MS:5000}
+      batch-size: 50
 
 coverage:
   base-url: http://127.0.0.1:8081

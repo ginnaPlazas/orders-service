@@ -66,7 +66,7 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
         entity.setStatus(order.getStatus().name());
         entity.setShippingType(order.getShippingType().name());
         entity.setRejectionReason(order.getRejectionReason());
-        entity.setGuideUrl(order.getGuideUrl());
+        entity.setGuideKey(order.getGuideKey());
         if (order.getZone() != null) entity.setZone(order.getZone().name());
         if (order.getFare() != null) {
             entity.setFareAmount(order.getFare().getAmount());
@@ -101,7 +101,7 @@ public class PostgresOrderRepositoryAdapter implements OrderRepositoryPort {
                 OrderStatus.valueOf(entity.getStatus()),
                 entity.getZone() != null ? Zone.valueOf(entity.getZone()) : null,
                 (entity.getFareAmount() != null) ? new Fare(entity.getFareAmount(), entity.getFareCurrency()) : null,
-                entity.getGuideUrl(),
+                entity.getGuideKey(),
                 entity.getRejectionReason()
         );
         return order;
