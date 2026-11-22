@@ -23,6 +23,18 @@ class MarkGuideReadyUseCaseTest {
     }
 
     @Test
+    void llamadaRepetida_esIdempotenteYConservaLaPrimeraUrl() {
+        // La cola entrega "al menos una vez": la Lambda puede avisar dos veces.
+        repository.save(TestData.orderIn(OrderStatus.GUIDE_GENERATING));
+
+        useCase.markGuideReady("order-1", "https://ejemplo.com/guia.pdf");
+        Order segundo = useCase.markGuideReady("order-1", "https://ejemplo.com/otra.pdf");
+
+        assertEquals(OrderStatus.GUIDE_READY, segundo.getStatus());
+        assertEquals("https://ejemplo.com/guia.pdf", segundo.getGuideUrl());
+    }
+
+    @Test
     void pedidoSoloConfirmado_lanzaExcepcionDeEstado() {
         repository.save(TestData.orderIn(OrderStatus.CONFIRMED));
 

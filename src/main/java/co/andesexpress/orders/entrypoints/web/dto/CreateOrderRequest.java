@@ -31,6 +31,9 @@ public class CreateOrderRequest {
     @Valid
     public List<ProductDto> products;
 
+    /** Opcional: STANDARD (por defecto) o EXPRESS. Es informativo, no cambia la tarifa. */
+    public String shippingType;
+
     public static class AddressDto {
         @Positive(message = "El id del departamento debe ser positivo")
         public int departmentId;

@@ -10,6 +10,7 @@ public class OrderResponse {
     public String zone;
     public FareDto fare;
     public String guideUrl;
+    public String shippingType;
 
     public static class AddressDto {
         public int departmentId;

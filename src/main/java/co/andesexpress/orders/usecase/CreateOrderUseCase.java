@@ -39,7 +39,8 @@ public class CreateOrderUseCase implements CreateOrderInputPort {
                 command.getCustomerEmail(),
                 command.getOrigin(),
                 command.getDestination(),
-                command.getProducts()
+                command.getProducts(),
+                command.getShippingType()
         );
         order = orderRepository.save(order);
 

@@ -27,6 +27,9 @@ public class OrderEntity {
     private String fareCurrency;
     private String guideUrl;
 
+    /** Nullable a propósito: los pedidos anteriores a este campo se leen como STANDARD. */
+    private String shippingType;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductEntity> products;
 
@@ -113,8 +116,15 @@ public class OrderEntity {
     public String getGuideUrl() { 
         return guideUrl; 
     }
-    public void setGuideUrl(String guideUrl) { 
-        this.guideUrl = guideUrl; 
+    public void setGuideUrl(String guideUrl) {
+        this.guideUrl = guideUrl;
+    }
+
+    public String getShippingType() {
+        return shippingType;
+    }
+    public void setShippingType(String shippingType) {
+        this.shippingType = shippingType;
     }
 
     public List<ProductEntity> getProducts() { 

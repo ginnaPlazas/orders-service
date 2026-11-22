@@ -18,7 +18,8 @@ public class OrderWebMapper {
                 .map(p -> new Product(p.name, p.weightKg))
                 .collect(Collectors.toList());
 
-        return new CreateOrderCommand(request.idempotencyKey, request.customerEmail, origin, destination, products);
+        return new CreateOrderCommand(request.idempotencyKey, request.customerEmail, origin, destination, products,
+                ShippingType.fromText(request.shippingType)); // inválido => IllegalArgumentException => HTTP 400
     }
 
     public OrderResponse toResponse(Order order) {
@@ -43,6 +44,7 @@ public class OrderWebMapper {
             response.fare.currency = order.getFare().getCurrency();
         }
         response.guideUrl = order.getGuideUrl();
+        response.shippingType = order.getShippingType().name();
 
         return response;
     }

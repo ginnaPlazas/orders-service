@@ -16,9 +16,15 @@ public final class Order {
     private Fare fare;
     private Zone zone;
     private String guideUrl;
-    
+    private final ShippingType shippingType;
 
+    /** Crea un pedido de envío estándar (compatibilidad con el constructor original). */
     public Order(String idempotencyKey, String customerEmail, Address origin, Address destination, List<Product> products) {
+        this(idempotencyKey, customerEmail, origin, destination, products, ShippingType.STANDARD);
+    }
+
+    public Order(String idempotencyKey, String customerEmail, Address origin, Address destination,
+                 List<Product> products, ShippingType shippingType) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("La clave de idempotencia es obligatoria");
         }
@@ -38,12 +44,20 @@ public final class Order {
         this.origin = origin;
         this.destination = destination;
         this.products = List.copyOf(products);
+        this.shippingType = shippingType == null ? ShippingType.STANDARD : shippingType;
         this.status = OrderStatus.PENDING_VALIDATION;
     }
 
     public static Order reconstruct(String id, String idempotencyKey, String customerEmail, Address origin, Address destination,
                                      List<Product> products, OrderStatus status, Zone zone, Fare fare, String guideUrl) {
-        Order order = new Order(idempotencyKey, customerEmail ,origin, destination, products);
+        return reconstruct(id, idempotencyKey, customerEmail, origin, destination, products, status, zone, fare,
+                guideUrl, ShippingType.STANDARD);
+    }
+
+    public static Order reconstruct(String id, String idempotencyKey, String customerEmail, Address origin, Address destination,
+                                     List<Product> products, OrderStatus status, Zone zone, Fare fare, String guideUrl,
+                                     ShippingType shippingType) {
+        Order order = new Order(idempotencyKey, customerEmail, origin, destination, products, shippingType);
         order.id = id;
         order.status = status;
         order.zone = zone;
@@ -132,7 +146,11 @@ public final class Order {
         return zone; 
     }
 
-    public String getGuideUrl() { 
-        return guideUrl; 
+    public String getGuideUrl() {
+        return guideUrl;
+    }
+
+    public ShippingType getShippingType() {
+        return shippingType;
     }
 }

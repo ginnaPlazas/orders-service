@@ -22,7 +22,7 @@ class ConfirmOrderUseCaseTest {
         repository = new FakeOrderRepository();
         eventosPublicados = new ArrayList<>();
         useCase = new ConfirmOrderUseCase(repository,
-                (orderId, customerEmail) -> eventosPublicados.add(orderId));
+                order -> eventosPublicados.add(order.getId()));
     }
 
     @Test
@@ -40,6 +40,25 @@ class ConfirmOrderUseCaseTest {
     @Test
     void pedidoSinValidar_lanzaExcepcionYNoPublicaEvento() {
         repository.save(TestData.orderIn(OrderStatus.PENDING_VALIDATION));
+
+        assertThrows(IllegalStateException.class, () -> useCase.confirmOrder("order-1"));
+        assertTrue(eventosPublicados.isEmpty());
+    }
+
+    @Test
+    void pedidoQueYaGeneraGuia_reconfirmarVuelveAPublicarElEventoSinError() {
+        // Caso: la publicación falló justo después de guardar, o el cliente confirmó dos veces.
+        repository.save(TestData.orderIn(OrderStatus.GUIDE_GENERATING));
+
+        Order order = useCase.confirmOrder("order-1");
+
+        assertEquals(OrderStatus.GUIDE_GENERATING, order.getStatus());
+        assertEquals(List.of("order-1"), eventosPublicados);
+    }
+
+    @Test
+    void pedidoConGuiaLista_noSePuedeConfirmarDeNuevo() {
+        repository.save(TestData.orderIn(OrderStatus.GUIDE_READY));
 
         assertThrows(IllegalStateException.class, () -> useCase.confirmOrder("order-1"));
         assertTrue(eventosPublicados.isEmpty());

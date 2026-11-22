@@ -3,8 +3,8 @@ spring:
     name: orders-service
 
 server:
-  port: 8082
-  
+  port: ${SERVER_PORT:8082}
+
 resilience4j:
   retry:
     instances:
@@ -13,10 +13,16 @@ resilience4j:
         wait-duration: 500ms
         retry-exceptions:
 
+# Cómo se publica el evento PedidoConfirmado:
+#   sqs -> directo a una cola (desarrollo local: Orders -> cola -> Notifications)
+#   sns -> a un tópico que reparte a Notifications y a la Lambda del PDF (perfil aws)
+events:
+  publisher: ${EVENTS_PUBLISHER:sqs}
+
 aws:
-  region: us-east-1
+  region: ${AWS_REGION:us-east-1}
   sqs:
-    order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/XXXXXXXXXXXX/pedido-confirmado-queue
+    order-confirmed-queue-url: ${ORDER_EVENTS_QUEUE_URL:https://sqs.us-east-1.amazonaws.com/XXXXXXXXXXXX/pedido-confirmado-queue}
 
 coverage:
-  base-url: http://127.0.0.1:8081
+  base-url: ${COVERAGE_BASE_URL:http://127.0.0.1:8081}

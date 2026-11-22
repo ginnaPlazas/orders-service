@@ -1,12 +1,29 @@
+# Perfil para correr en AWS (EC2 del Learner Lab) o contra la RDS real.
+# Todo lo que depende de la cuenta del laboratorio llega por variables de entorno, SIN valor por
+# defecto a propósito: si falta alguna, la app falla al arrancar nombrando la variable, en vez de
+# intentar conectarse a la RDS o a la cola de otra cuenta.
+#
+#   ORDERS_DB_URL          jdbc:postgresql://<endpoint-de-tu-RDS>:5432/orders_db
+#   ORDERS_DB_USER         (opcional, por defecto postgres)
+#   DB_PASSWORD            contraseña de la RDS
+#   ORDER_EVENTS_TOPIC_ARN arn:aws:sns:us-east-1:<cuenta>:pedido-confirmado   (solo si EVENTS_PUBLISHER=sns)
+#   COVERAGE_BASE_URL      http://<ip-o-dns-privado-de-Coverage>:8081
+#   EVENTS_PUBLISHER       sns (por defecto en este perfil) | sqs
 spring:
   datasource:
-    url: jdbc:postgresql://orders-db.clbizfrtbhy5.us-east-1.rds.amazonaws.com:5432/orders_db
-    username: postgres
+    url: ${ORDERS_DB_URL}
+    username: ${ORDERS_DB_USER:postgres}
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
 
+events:
+  publisher: ${EVENTS_PUBLISHER:sns}
+
 aws:
-  sqs:
-    order-confirmed-queue-url: https://sqs.us-east-1.amazonaws.com/337072027799/AndesExpressQueue
+  sns:
+    order-confirmed-topic-arn: ${ORDER_EVENTS_TOPIC_ARN}
+
+coverage:
+  base-url: ${COVERAGE_BASE_URL}

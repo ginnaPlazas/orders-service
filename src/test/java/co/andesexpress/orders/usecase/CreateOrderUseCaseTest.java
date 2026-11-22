@@ -3,6 +3,7 @@ package co.andesexpress.orders.usecase;
 import co.andesexpress.orders.domain.exception.DestinationRejectedException;
 import co.andesexpress.orders.domain.model.Order;
 import co.andesexpress.orders.domain.model.OrderStatus;
+import co.andesexpress.orders.domain.model.ShippingType;
 import co.andesexpress.orders.domain.model.Zone;
 import co.andesexpress.orders.domain.port.out.CoverageClientPort.CoverageValidationResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,25 @@ class CreateOrderUseCaseTest {
         assertEquals("El municipio no existe", ex.getMessage());
         Order guardado = repository.findByIdempotencyKey("key-1").orElseThrow();
         assertEquals(OrderStatus.REJECTED, guardado.getStatus());
+    }
+
+    @Test
+    void tipoDeEnvioExpres_seGuardaEnElPedido() {
+        respuestaCoverage = new CoverageValidationResult(true, Zone.SAME_CITY, TestData.fare(), null);
+
+        Order order = useCase.createOrder(TestData.command("key-1", ShippingType.EXPRESS));
+
+        assertEquals(ShippingType.EXPRESS, order.getShippingType());
+        assertEquals(ShippingType.EXPRESS, repository.findById(order.getId()).orElseThrow().getShippingType());
+    }
+
+    @Test
+    void sinTipoDeEnvio_quedaComoEstandar() {
+        respuestaCoverage = new CoverageValidationResult(true, Zone.SAME_CITY, TestData.fare(), null);
+
+        Order order = useCase.createOrder(TestData.command("key-1"));
+
+        assertEquals(ShippingType.STANDARD, order.getShippingType());
     }
 
     @Test
